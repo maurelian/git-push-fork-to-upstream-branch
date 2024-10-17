@@ -2,7 +2,6 @@
 
 set -eo pipefail
 
-: ${GPF_UPSTREAM_BRANCH:=trigger-integration}
 : ${GPF_USE_SSH:=""}
 
 UPSTREAM_REPO=$1
@@ -17,6 +16,9 @@ fi
 SOURCE_GH_USER=$(echo "$BRANCH_SPEC" | awk -F: '{print $1}')
 SOURCE_BRANCH=$(echo "$BRANCH_SPEC" | awk -F: '{print $2}')
 REPO_NAME=$(git remote get-url --push origin | awk -F/ '{print $NF}' | sed 's/\.git$//')
+
+# Generate the GPF_UPSTREAM_BRANCH name based on BRANCH_SPEC
+GPF_UPSTREAM_BRANCH="integration/${SOURCE_GH_USER}/${SOURCE_BRANCH}"
 
 git remote remove fork-to-test || echo "Added new remote fork-to-test"
 if [ -n "$GPF_USE_SSH" ]; then
