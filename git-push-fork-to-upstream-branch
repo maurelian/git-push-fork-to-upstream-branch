@@ -55,7 +55,8 @@ else
     git remote add "$REMOTE_NAME" "https://github.com/$SOURCE_GH_USER/$REPO_NAME.git"
 fi
 
-git fetch --all
+
+git fetch "$REMOTE_NAME" "$SOURCE_BRANCH"
 git push --force $UPSTREAM_REPO "refs/remotes/$REMOTE_NAME/$SOURCE_BRANCH:refs/heads/$GPF_UPSTREAM_BRANCH"
 
 if [ "$TEMP_MODE" = true ]; then
