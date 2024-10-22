@@ -5,7 +5,7 @@ set -eo pipefail
 : ${GPF_USE_SSH:=""}
 
 TEMP_MODE=false
-UPSTREAM_REPO=""
+UPSTREAM_REPO="origin"
 BRANCH_SPEC=""
 
 # Parse command line arguments
@@ -16,13 +16,10 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            if [ -z "$UPSTREAM_REPO" ]; then
-                UPSTREAM_REPO=$1
-            elif [ -z "$BRANCH_SPEC" ]; then
+            if [ -z "$BRANCH_SPEC" ]; then
                 BRANCH_SPEC=$1
             else
-                echo "Error: Too many arguments"
-                exit 1
+                UPSTREAM_REPO=$1
             fi
             shift
             ;;
@@ -31,16 +28,16 @@ done
 
 NUM_COLONS=$(echo "$BRANCH_SPEC" | awk -F: '{print NF-1}')
 
-if [ -z "$UPSTREAM_REPO" ] || [ -z "$BRANCH_SPEC" ] || [ "$NUM_COLONS" -ne 1 ]; then
-    echo "Usage: $0 [--temp] <upstream_repository> <fork_username>:<fork_branchname>"
+if [ -z "$BRANCH_SPEC" ] || [ "$NUM_COLONS" -ne 1 ]; then
+    echo "Usage: $0 [--temp] <fork_username>:<fork_branchname> [<upstream_repository>]"
     echo
     echo "Options:"
     echo "  --temp  Temporarily add the remote for the operation and remove it afterwards"
     echo
     echo "Arguments:"
-    echo "  <upstream_repository>  The repository to push the branch to"
     echo "  <fork_username>        The GitHub username of the fork owner"
     echo "  <fork_branchname>      The name of the branch in the fork to push"
+    echo "  <upstream_repository>  The repository to push the branch to (default: origin)"
     exit 1
 fi
 
@@ -62,7 +59,6 @@ if [ -n "$GPF_USE_SSH" ]; then
 else
     git remote add "$REMOTE_NAME" "https://github.com/$SOURCE_GH_USER/$REPO_NAME.git"
 fi
-
 
 git fetch "$REMOTE_NAME" "$SOURCE_BRANCH"
 git push --force $UPSTREAM_REPO "refs/remotes/$REMOTE_NAME/$SOURCE_BRANCH:refs/heads/$GPF_UPSTREAM_BRANCH"
