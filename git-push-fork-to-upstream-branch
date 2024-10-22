@@ -8,12 +8,30 @@ TEMP_MODE=false
 UPSTREAM_REPO="origin"
 BRANCH_SPEC=""
 
+# Function to print usage information
+print_usage() {
+    echo "Usage: $0 [--temp] [--help] <fork_username>:<fork_branchname> [<upstream_repository>]"
+    echo
+    echo "Options:"
+    echo "  --temp  Temporarily add the remote for the operation and remove it afterwards"
+    echo "  --help  Display this help message and exit"
+    echo
+    echo "Arguments:"
+    echo "  <fork_username>        The GitHub username of the fork owner"
+    echo "  <fork_branchname>      The name of the branch in the fork to push"
+    echo "  <upstream_repository>  The repository to push the branch to (default: origin)"
+}
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --temp)
             TEMP_MODE=true
             shift
+            ;;
+        --help)
+            print_usage
+            exit 0
             ;;
         *)
             if [ -z "$BRANCH_SPEC" ]; then
@@ -29,15 +47,7 @@ done
 NUM_COLONS=$(echo "$BRANCH_SPEC" | awk -F: '{print NF-1}')
 
 if [ -z "$BRANCH_SPEC" ] || [ "$NUM_COLONS" -ne 1 ]; then
-    echo "Usage: $0 [--temp] <fork_username>:<fork_branchname> [<upstream_repository>]"
-    echo
-    echo "Options:"
-    echo "  --temp  Temporarily add the remote for the operation and remove it afterwards"
-    echo
-    echo "Arguments:"
-    echo "  <fork_username>        The GitHub username of the fork owner"
-    echo "  <fork_branchname>      The name of the branch in the fork to push"
-    echo "  <upstream_repository>  The repository to push the branch to (default: origin)"
+    print_usage
     exit 1
 fi
 
