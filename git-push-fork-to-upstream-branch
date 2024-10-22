@@ -4,12 +4,35 @@ set -eo pipefail
 
 : ${GPF_USE_SSH:=""}
 
-UPSTREAM_REPO=$1
-BRANCH_SPEC=$2
+TEMP_MODE=false
+UPSTREAM_REPO=""
+BRANCH_SPEC=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --temp)
+            TEMP_MODE=true
+            shift
+            ;;
+        *)
+            if [ -z "$UPSTREAM_REPO" ]; then
+                UPSTREAM_REPO=$1
+            elif [ -z "$BRANCH_SPEC" ]; then
+                BRANCH_SPEC=$1
+            else
+                echo "Error: Too many arguments"
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
 NUM_COLONS=$(echo "$BRANCH_SPEC" | awk -F: '{print NF-1}')
 
-if [ "$#" -ne 2 ] || [ "$NUM_COLONS" -ne 1 ] ; then
-    echo "Usage: $0 <upstream_repository> <fork_username>:<fork_branchname>"
+if [ -z "$UPSTREAM_REPO" ] || [ -z "$BRANCH_SPEC" ] || [ "$NUM_COLONS" -ne 1 ]; then
+    echo "Usage: $0 [--temp] <upstream_repository> <fork_username>:<fork_branchname>"
     exit 1
 fi
 
@@ -20,15 +43,27 @@ REPO_NAME=$(git remote get-url --push origin | awk -F/ '{print $NF}' | sed 's/\.
 # Generate the GPF_UPSTREAM_BRANCH name based on BRANCH_SPEC
 GPF_UPSTREAM_BRANCH="integration/${SOURCE_GH_USER}/${SOURCE_BRANCH}"
 
-git remote remove fork-to-test || echo "Added new remote fork-to-test"
+# Set the remote name based on SOURCE_GH_USER
+REMOTE_NAME="fork-${SOURCE_GH_USER}"
+
+# Remove existing remote if it exists
+git remote remove "$REMOTE_NAME" 2>/dev/null || true
+
 if [ -n "$GPF_USE_SSH" ]; then
-    git remote add fork-to-test git@github.com:$SOURCE_GH_USER/$REPO_NAME.git
+    git remote add "$REMOTE_NAME" "git@github.com:$SOURCE_GH_USER/$REPO_NAME.git"
 else
-    git remote add fork-to-test https://github.com/$SOURCE_GH_USER/$REPO_NAME.git
+    git remote add "$REMOTE_NAME" "https://github.com/$SOURCE_GH_USER/$REPO_NAME.git"
 fi
+
 git fetch --all
-git push --force $UPSTREAM_REPO "refs/remotes/fork-to-test/$SOURCE_BRANCH:refs/heads/$GPF_UPSTREAM_BRANCH"
-git remote remove fork-to-test || echo "Removed new remote fork-to-test"
+git push --force $UPSTREAM_REPO "refs/remotes/$REMOTE_NAME/$SOURCE_BRANCH:refs/heads/$GPF_UPSTREAM_BRANCH"
+
+if [ "$TEMP_MODE" = true ]; then
+    git remote remove "$REMOTE_NAME"
+    echo "Removed temporary remote $REMOTE_NAME"
+else
+    echo "Kept remote $REMOTE_NAME for future use"
+fi
 
 cat <<EOF
 Forked branch '$BRANCH_SPEC' has been pushed to $UPSTREAM_REPO branch '$GPF_UPSTREAM_BRANCH'
