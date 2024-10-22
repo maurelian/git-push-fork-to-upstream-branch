@@ -33,6 +33,14 @@ NUM_COLONS=$(echo "$BRANCH_SPEC" | awk -F: '{print NF-1}')
 
 if [ -z "$UPSTREAM_REPO" ] || [ -z "$BRANCH_SPEC" ] || [ "$NUM_COLONS" -ne 1 ]; then
     echo "Usage: $0 [--temp] <upstream_repository> <fork_username>:<fork_branchname>"
+    echo
+    echo "Options:"
+    echo "  --temp  Temporarily add the remote for the operation and remove it afterwards"
+    echo
+    echo "Arguments:"
+    echo "  <upstream_repository>  The repository to push the branch to"
+    echo "  <fork_username>        The GitHub username of the fork owner"
+    echo "  <fork_branchname>      The name of the branch in the fork to push"
     exit 1
 fi
 
